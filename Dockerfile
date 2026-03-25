@@ -8,11 +8,22 @@ RUN apt-get update && apt-get install -y git && apt-get clean
 RUN git clone https://github.com/MLukman/Keycloak-PII-Data-Encryption-Provider.git .
 RUN mvn clean package -Dkeycloak.version=$KEYCLOAK_VERSION
 
-# --- Stage 2: Keycloak with custom provider and config ---
+# --- Stage 2: Build Document Number authenticator SPI ---
+FROM maven:3.8.7-openjdk-18-slim AS document-number-authenticator
+ARG KEYCLOAK_VERSION
+WORKDIR /app
+COPY keycloak-document-number-authenticator/pom.xml .
+COPY keycloak-document-number-authenticator/src ./src
+RUN mvn clean package -Dkeycloak.version=$KEYCLOAK_VERSION
+
+# --- Stage 3: Keycloak with custom providers and config ---
 FROM quay.io/keycloak/keycloak:$KEYCLOAK_VERSION
 
 # Add PII encryption provider
-COPY --from=keycloak-pii-data-encryption /app/target/*.jar /opt/keycloak/providers
+COPY --from=keycloak-pii-data-encryption /app/target/*.jar /opt/keycloak/providers/
+
+# Add Document Number authenticator SPI
+COPY --from=document-number-authenticator /app/target/*.jar /opt/keycloak/providers/
 
 # Add custom configuration
 RUN mkdir -p /opt/keycloak/conf

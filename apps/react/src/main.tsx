@@ -3,8 +3,8 @@ import { createRoot } from "react-dom/client";
 import { AuthProvider, useAuth } from "react-oidc-context";
 
 const oidcConfig = {
-  authority: "http://localhost:8080/realms/test",
-  client_id: "react-app",
+  authority: "http://localhost:8080/realms/ripley",
+  client_id: "react-document-number-app",
   redirect_uri: "http://localhost:5173",
   response_type: "code",
   scope: "openid profile email",
