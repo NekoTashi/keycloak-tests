@@ -16,7 +16,15 @@ COPY keycloak-document-number-authenticator/pom.xml .
 COPY keycloak-document-number-authenticator/src ./src
 RUN mvn clean package -Dkeycloak.version=$KEYCLOAK_VERSION
 
-# --- Stage 3: Keycloak with custom providers and config ---
+# --- Stage 3: Build License Sync event listener SPI ---
+FROM maven:3.8.7-openjdk-18-slim AS license-sync
+ARG KEYCLOAK_VERSION
+WORKDIR /app
+COPY keycloak-license-sync/pom.xml .
+COPY keycloak-license-sync/src ./src
+RUN mvn clean package -Dkeycloak.version=$KEYCLOAK_VERSION
+
+# --- Stage 4: Keycloak with custom providers and config ---
 FROM quay.io/keycloak/keycloak:$KEYCLOAK_VERSION
 
 # Add PII encryption provider
@@ -24,6 +32,9 @@ COPY --from=keycloak-pii-data-encryption /app/target/*.jar /opt/keycloak/provide
 
 # Add Document Number authenticator SPI
 COPY --from=document-number-authenticator /app/target/*.jar /opt/keycloak/providers/
+
+# Add License Sync SPI
+COPY --from=license-sync /app/target/*.jar /opt/keycloak/providers/
 
 # Add custom configuration
 RUN mkdir -p /opt/keycloak/conf
